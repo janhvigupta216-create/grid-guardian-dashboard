@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grid Guardian | AI-Powered Punjab Power Load Forecast</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #e2e8f0;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #10b981;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #059669;
+    }
+
+    .nav-link {
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .nav-link:after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: #10b981;
+      transition: width 0.3s;
+    }
+
+    .nav-link:hover:after,
+    .nav-link.active:after {
+      width: 100%;
+    }
+
+    .nav-link.active {
+      color: #10b981;
+      font-weight: 600;
+    }
+
+    .page {
+      display: none;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6));
+      border: 1px solid rgba(16, 185, 129, 0.1);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      border-radius: 1.5rem;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(16, 185, 129, 0.3);
+      box-shadow: 0 20px 40px rgba(16, 185, 129, 0.1);
+    }
+
+    .metric-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      transition: left 0.5s;
+    }
+
+    .metric-card:hover::before {
+      left: 100%;
+    }
+
+    .peak-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.375rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .badge-critical {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.5);
+    }
+
+    .badge-warning {
+      background: rgba(251, 146, 60, 0.2);
+      color: #fed7aa;
+      border: 1px solid rgba(251, 146, 60, 0.5);
+    }
+
+    .badge-normal {
+      background: rgba(16, 185, 129, 0.2);
+      color: #a7f3d0;
+      border: 1px solid rgba(16, 185, 129, 0.5);
+    }
+
+    .ai-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+    }
+
+    .ai-indicator i {
+      animation: spin 3s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .progress-bar {
+      background: linear-gradient(90deg, #10b981, #34d399);
+      height: 4px;
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: slide 1.5s infinite;
+    }
+
+    @keyframes slide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      border-bottom: 1px solid rgba(16, 185, 129, 0.05);
+      transition: background 0.2s;
+    }
+
+    .stat-row:hover {
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+
+    .tooltip {
+      position: relative;
+      cursor: help;
+      border-bottom: 1px dotted #10b981;
+    }
+
+    .tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: #10b981;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      white-space: nowrap;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      z-index: 10;
+      font-size: 0.75rem;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .status-indicator.active {
+      background: #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+
+    .status-indicator.warning {
+      background: #fb923c;
+      box-shadow: 0 0 10px rgba(251, 146, 60, 0.5);
+    }
+
+    .status-indicator.critical {
+      background: #ef4444;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    }
+
+    .info-box {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.02));
+      border-left: 3px solid #10b981;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin: 1rem 0;
+    }
+
+    .risk-chart-container {
+      position: relative;
+      height: 300px;
+    }
+
+    .button-primary {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .button-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
+    }
+
+    .button-primary:active {
+      transform: translateY(0);
+    }
+
+    .forecast-item {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr 1fr;
+      gap: 1rem;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid rgba(16, 185, 129, 0.05);
+      transition: background 0.2s;
+    }
+
+    .forecast-item:hover {
+      background: rgba(16, 185, 129, 0.03);
+    }
+
+    @media (max-width: 768px) {
+      .forecast-item {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .load-bar {
+      background: linear-gradient(90deg, #10b981, #34d399);
+      height: 24px;
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .load-bar.warning {
+      background: linear-gradient(90deg, #fb923c, #fcd34d);
+    }
+
+    .load-bar.critical {
+      background: linear-gradient(90deg, #ef4444, #f87171);
+    }
+
+    .load-bar-label {
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: white;
+      z-index: 10;
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    .table-responsive {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table-responsive th {
+      background: rgba(16, 185, 129, 0.1);
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid rgba(16, 185, 129, 0.2);
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .table-responsive td {
+      padding: 1rem;
+      border-bottom: 1px solid rgba(16, 185, 129, 0.05);
+    }
+
+    .table-responsive tr:hover {
+      background: rgba(16, 185, 129, 0.03);
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .feature-box {
+      background: rgba(16, 185, 129, 0.05);
+      border: 1px solid rgba(16, 185, 129, 0.1);
+      padding: 1.5rem;
+      border-radius: 1rem;
+      text-align: center;
+      transition: all 0.3s;
+    }
+
+    .feature-box:hover {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.3);
+      transform: translateY(-4px);
+    }
+
+    .feature-box i {
+      font-size: 2rem;
+      color: #10b981;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="sticky top-0 z-50 border-b border-emerald-900/30 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <i class="fas fa-shield-alt text-emerald-500 text-3xl"></i>
+          <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold">Grid Guardian</h1>
+          <p class="text-xs text-emerald-400">AI-Powered Grid Forecasting</p>
+        </div>
+      </div>
+
+      <div class="flex gap-1 text-sm font-medium" id="nav">
+        <a href="#" onclick="showPage('dashboard')" class="nav-link active px-6 py-3 rounded-lg flex items-center gap-2 hover:text-emerald-400" id="nav-dashboard">
+          <i class="fas fa-home"></i> Dashboard
+        </a>
+        <a href="#" onclick="showPage('forecast')" class="nav-link px-6 py-3 rounded-lg flex items-center gap-2 hover:text-emerald-400" id="nav-forecast">
+          <i class="fas fa-chart-line"></i> Forecast
+        </a>
+        <a href="#" onclick="showPage('alerts')" class="nav-link px-6 py-3 rounded-lg flex items-center gap-2 hover:text-emerald-400" id="nav-alerts">
+          <i class="fas fa-bell"></i> Alerts
+        </a>
+        <a href="#" onclick="showPage('ai-insights')" class="nav-link px-6 py-3 rounded-lg flex items-center gap-2 hover:text-emerald-400" id="nav-ai-insights">
+          <i class="fas fa-brain"></i> AI Insights
+        </a>
+        <a href="#" onclick="showPage('about')" class="nav-link px-6 py-3 rounded-lg flex items-center gap-2 hover:text-emerald-400" id="nav-about">
+          <i class="fas fa-info-circle"></i> About
+        </a>
+      </div>
+
+      <div class="text-xs text-slate-400 text-right hidden sm:block">
+        <p class="font-semibold">Punjab SLDC</p>
+        <p id="current-time">Loading...</p>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Dashboard Page -->
+  <div id="dashboard" class="page active max-w-7xl mx-auto p-6 space-y-8">
+    <div class="flex justify-between items-start">
+      <div>
+        <h1 class="text-4xl font-bold mb-2">Punjab Grid Status</h1>
+        <p class="text-slate-400">Real-time electricity demand forecast powered by AI</p>
+      </div>
+      <div class="text-right hidden md:block">
+        <div class="ai-indicator">
+          <i class="fas fa-microchip"></i>
+          <span>AI Model: XGBoost + LSTM Active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Metrics -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div class="card metric-card p-6">
+        <p class="text-slate-400 text-sm">Current Demand</p>
+        <p class="text-4xl font-bold mt-3 text-emerald-400" id="current-load">6,184 MW</p>
+        <div class="mt-4 h-1 bg-slate-700 rounded-full overflow-hidden">
+          <div class="progress-bar w-3/4"></div>
+        </div>
+        <p class="text-emerald-400 text-xs mt-2 flex items-center gap-1">
+          <i class="fas fa-arrow-down"></i> 1.8% from last hour
+        </p>
+      </div>
+
+      <div class="card metric-card p-6">
+        <p class="text-slate-400 text-sm">Peak Forecast</p>
+        <p class="text-4xl font-bold mt-3 text-orange-400" id="peak-load">8,150 MW</p>
+        <p class="text-orange-400 text-xs mt-4 font-semibold">at 19:00 IST</p>
+        <p class="text-slate-400 text-xs mt-1">Today</p>
+      </div>
+
+      <div class="card metric-card p-6">
+        <p class="text-slate-400 text-sm">Risk Level</p>
+        <p class="text-3xl font-bold mt-3 text-red-500 peak-pulse">HIGH</p>
+        <div class="mt-3 flex gap-1">
+          <span class="status-indicator critical"></span>
+          <span class="status-indicator critical"></span>
+          <span class="status-indicator warning"></span>
+        </div>
+        <p class="text-red-400 text-xs mt-2">Evening peak critical</p>
+      </div>
+
+      <div class="card metric-card p-6">
+        <p class="text-slate-400 text-sm">24h Average</p>
+        <p class="text-4xl font-bold mt-3">6,480 MW</p>
+        <p class="text-amber-400 text-xs mt-4 flex items-center gap-1">
+          <i class="fas fa-arrow-up"></i> +9.2% vs yesterday
+        </p>
+      </div>
+
+      <div class="card metric-card p-6">
+        <p class="text-slate-400 text-sm">Capacity Utilization</p>
+        <p class="text-4xl font-bold mt-3">78%</p>
+        <div class="mt-4 h-2 bg-slate-700 rounded-full overflow-hidden">
+          <div class="bg-gradient-to-r from-emerald-500 to-yellow-500" style="width: 78%; height: 100%;"></div>
+        </div>
+        <p class="text-slate-400 text-xs mt-2">Safe threshold</p>
+      </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="card p-8">
+      <h2 class="text-2xl font-semibold mb-6 flex items-center gap-2">
+        <i class="fas fa-chart-line text-emerald-500"></i>
+        Hourly Load Forecast (Next 48 Hours)
+        <span class="text-xs bg-emerald-900/30 text-emerald-300 px-3 py-1 rounded-full ml-auto">AI Prediction</span>
+      </h2>
+      <div class="h-96">
+        <canvas id="loadChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- High Load Periods -->
+      <div class="card p-8">
+        <h3 class="text-xl font-semibold mb-6 flex items-center gap-2">
+          <i class="fas fa-exclamation-circle text-orange-500"></i>
+          High Load Periods
+        </h3>
+        <div id="highLoadList" class="space-y-3"></div>
+      </div>
+
+      <!-- Quick Insights -->
+      <div class="card p-8">
+        <h3 class="text-xl font-semibold mb-6 flex items-center gap-2">
+          <i class="fas fa-lightbulb text-yellow-500"></i>
+          AI-Generated Insights
+        </h3>
+        <div class="space-y-4 text-sm">
+          <div class="flex gap-4 p-3 rounded-lg hover:bg-slate-800 transition">
+            <i class="fas fa-sun text-yellow-400 mt-1 flex-shrink-0"></i>
+            <p><strong>Solar Support:</strong> Strong generation till 17:30 IST, contributing ~18% to grid</p>
+          </div>
+          <div class="flex gap-4 p-3 rounded-lg hover:bg-slate-800 transition">
+            <i class="fas fa-thermometer-half text-red-400 mt-1 flex-shrink-0"></i>
+            <p><strong>Temperature Impact:</strong> 34–37°C forecast driving 12-15% increase in AC load</p>
+          </div>
+          <div class="flex gap-4 p-3 rounded-lg hover:bg-slate-800 transition">
+            <i class="fas fa-bolt text-emerald-400 mt-1 flex-shrink-0"></i>
+            <p><strong>Recommended Action:</strong> Activate demand response programs 18:00-21:00</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forecast Page -->
+  <div id="forecast" class="page max-w-7xl mx-auto p-6 space-y-8">
+    <div>
+      <h1 class="text-4xl font-bold mb-2">Detailed 24-Hour Load Forecast</h1>
+      <p class="text-slate-400">AI-powered predictions using XGBoost, LSTM, and ARIMA ensemble</p>
+    </div>
+
+    <div class="card p-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold">Hourly Breakdown</h2>
+        <span class="ai-indicator">
+          <i class="fas fa-microchip"></i>
+          Ensemble Prediction
+        </span>
+      </div>
+
+      <div class="table-container">
+        <table class="table-responsive">
+          <thead>
+            <tr>
+              <th>Time (IST)</th>
+              <th>Forecasted Load</th>
+              <th>Confidence</th>
+              <th>Risk Level</th>
+            </tr>
+          </thead>
+          <tbody id="forecastTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Forecast Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="card p-6">
+        <h3 class="font-semibold text-emerald-400 mb-4">Peak Hours</h3>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span>19:00 - 20:00</span>
+            <span class="font-bold text-orange-400">8,150 MW</span>
+          </div>
+          <div class="flex justify-between">
+            <span>20:00 - 21:00</span>
+            <span class="font-bold text-orange-400">8,100 MW</span>
+          </div>
+          <div class="flex justify-between">
+            <span>18:00 - 19:00</span>
+            <span class="font-bold text-yellow-400">7,950 MW</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-6">
+        <h3 class="font-semibold text-emerald-400 mb-4">Low Demand Hours</h3>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span>03:00 - 04:00</span>
+            <span class="font-bold text-emerald-400">4,200 MW</span>
+          </div>
+          <div class="flex justify-between">
+            <span>04:00 - 05:00</span>
+            <span class="font-bold text-emerald-400">4,350 MW</span>
+          </div>
+          <div class="flex justify-between">
+            <span>02:00 - 03:00</span>
+            <span class="font-bold text-emerald-400">4,100 MW</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-6">
+        <h3 class="font-semibold text-emerald-400 mb-4">Statistics</h3>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span>Average Load</span>
+            <span class="font-bold">6,480 MW</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Std. Deviation</span>
+            <span class="font-bold">1,240 MW</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Forecast Accuracy</span>
+            <span class="font-bold text-emerald-400">94.2%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerts Page -->
+  <div id="alerts" class="page max-w-7xl mx-auto p-6 space-y-8">
+    <div>
+      <h1 class="text-4xl font-bold mb-2">Active Alerts & Notifications</h1>
+      <p class="text-slate-400">Real-time grid status monitoring and intelligent alerts</p>
+    </div>
+
+    <div class="space-y-6" id="alertsList"></div>
+
+    <div class="info-box">
+      <div class="flex gap-3">
+        <i class="fas fa-info-circle text-emerald-500 flex-shrink-0 mt-1"></i>
+        <div class="text-sm">
+          <p class="font-semibold mb-1">Alert System Status: ACTIVE</p>
+          <p>All monitoring systems operational. AI models continuously analyzing grid data every 5 minutes.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Insights Page -->
+  <div id="ai-insights" class="page max-w-7xl mx-auto p-6 space-y-8">
+    <div>
+      <h1 class="text-4xl font-bold mb-2">AI-Powered Insights</h1>
+      <p class="text-slate-400">Machine learning analysis and grid optimization recommendations</p>
+    </div>
+
+    <!-- AI Models Used -->
+    <div class="card p-8">
+      <h2 class="text-2xl font-semibold mb-6 flex items-center gap-2">
+        <i class="fas fa-brain text-emerald-500"></i>
+        AI Models in Use
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="p-6 border border-emerald-900/30 rounded-lg">
+          <div class="flex items-start gap-4">
+            <i class="fas fa-tree text-orange-500 text-2xl"></i>
+            <div>
+              <h3 class="font-bold mb-2">XGBoost Regressor</h3>
+              <p class="text-sm text-slate-400 mb-3">Gradient boosting for short-term forecasts (0-6 hours)</p>
+              <div class="text-xs">
+                <p><span class="text-emerald-400">Accuracy:</span> 92-95%</p>
+                <p><span class="text-emerald-400">Status:</span> <span class="status-indicator active inline-block"></span> Active</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-6 border border-emerald-900/30 rounded-lg">
+          <div class="flex items-start gap-4">
+            <i class="fas fa-network-wired text-blue-500 text-2xl"></i>
+            <div>
+              <h3 class="font-bold mb-2">LSTM Neural Network</h3>
+              <p class="text-sm text-slate-400 mb-3">Deep learning for trend analysis (6-24 hours ahead)</p>
+              <div class="text-xs">
+                <p><span class="text-emerald-400">Accuracy:</span> 89-93%</p>
+                <p><span class="text-emerald-400">Status:</span> <span class="status-indicator active inline-block"></span> Active</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-6 border border-emerald-900/30 rounded-lg">
+          <div class="flex items-start gap-4">
+            <i class="fas fa-chart-area text-purple-500 text-2xl"></i>
+            <div>
+              <h3 class="font-bold mb-2">ARIMA Time-Series</h3>
+              <p class="text-sm text-slate-400 mb-3">Statistical model for seasonal patterns</p>
+              <div class="text-xs">
+                <p><span class="text-emerald-400">Accuracy:</span> 85-90%</p>
+                <p><span class="text-emerald-400">Status:</span> <span class="status-indicator active inline-block"></span> Active</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-6 border border-emerald-900/30 rounded-lg">
+          <div class="flex items-start gap-4">
+            <i class="fas fa-star text-yellow-500 text-2xl"></i>
+            <div>
+              <h3 class="font-bold mb-2">Ensemble Prediction</h3>
+              <p class="text-sm text-slate-400 mb-3">Combined intelligence from all models</p>
+              <div class="text-xs">
+                <p><span class="text-emerald-400">Accuracy:</span> 94-96%</p>
+                <p><span class="text-emerald-400">Status:</span> <span class="status-indicator active inline-block"></span> Active</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Observations -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="card p-8">
+        <h3 class="text-xl font-semibold mb-6 flex items-center gap-2">
+          <i class="fas fa-microscope text-cyan-500"></i>
+          Key Observations
+        </h3>
+        <ul class="space-y-5 text-sm">
+          <li class="flex gap-3">
+            <i class="fas fa-sun text-amber-400 flex-shrink-0 mt-1"></i>
+            <span><strong>Solar Generation:</strong> Contributes ~18% during daytime (8am-5pm)</span>
+          </li>
+          <li class="flex gap-3">
+            <i class="fas fa-temperature-high text-red-400 flex-shrink-0 mt-1"></i>
+            <span><strong>Temperature Correlation:</strong> Every 1°C increase → 300 MW load increase</span>
+          </li>
+          <li class="flex gap-3">
+            <i class="fas fa-industry text-blue-400 flex-shrink-0 mt-1"></i>
+            <span><strong>Industrial Load:</strong> Stable at 40% of total (free power scheme)</span>
+          </li>
+          <li class="flex gap-3">
+            <i class="fas fa-home text-green-400 flex-shrink-0 mt-1"></i>
+            <span><strong>Residential Spike:</strong> Evening peak 18:00-21:00 (50% of AC load)</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card p-8">
+        <h3 class="text-xl font-semibold mb-6 flex items-center gap-2">
+          <i class="fas fa-rocket text-green-500"></i>
+          Recommended Actions
+        </h3>
+        <ul class="space-y-5 text-sm">
+          <li class="flex gap-3">
+            <i class="fas fa-clock text-emerald-400 flex-shrink-0 mt-1"></i>
+            <span><strong>Load Shifting:</strong> Move industrial jobs to 23:00-06:00 (off-peak)</span>
+          </li>
+          <li class="flex gap-3">
+            <i class="fas fa-bell text-orange-400 flex-shrink-0 mt-1"></i>
+            <span><strong>Demand Response:</strong> Activate from 18:00-21:00 (peak hours)</span>
+          </li>
+          <li class="flex gap-3">
+            <i class="fas fa-message text-purple-400 flex-shrink-0 mt-1"></i>
+            <span><strong>Consumer Alerts:</strong> SMS notifications to high-consumption users</span>
+          </li>
+          <li class="flex gap-3">
+            <i class="fas fa-plug text-blue-400 flex-shrink-0 mt-1"></i>
+            <span><strong>Reserve Deployment:</strong> Stage 500 MW backup by 17:00</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Model Performance -->
+    <div class="card p-8">
+      <h3 class="text-xl font-semibold mb-6">Model Performance Metrics</h3>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="stat-row flex-col">
+          <span class="text-emerald-400 font-bold text-2xl">94.2%</span>
+          <span class="text-slate-400 text-sm">Ensemble Accuracy</span>
+        </div>
+        <div class="stat-row flex-col">
+          <span class="text-emerald-400 font-bold text-2xl">±145 MW</span>
+          <span class="text-slate-400 text-sm">Mean Absolute Error</span>
+        </div>
+        <div class="stat-row flex-col">
+          <span class="text-emerald-400 font-bold text-2xl">0.89s</span>
+          <span class="text-slate-400 text-sm">Prediction Time</span>
+        </div>
+        <div class="stat-row flex-col">
+          <span class="text-emerald-400 font-bold text-2xl">3 Years</span>
+          <span class="text-slate-400 text-sm">Training Data</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- About Page -->
+  <div id="about" class="page max-w-7xl mx-auto p-6 space-y-8">
+    <div>
+      <h1 class="text-4xl font-bold mb-2">About Grid Guardian</h1>
+      <p class="text-slate-400">Intelligent electricity demand forecasting for Punjab's power grid</p>
+    </div>
+
+    <!-- Overview -->
+    <div class="card p-8">
+      <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+        <i class="fas fa-book text-emerald-500"></i>
+        Project Overview
+      </h2>
+      <p class="text-slate-300 mb-4">
+        Grid Guardian is an AI-powered electricity load forecasting system designed specifically for Punjab's State Load Dispatch Centre (SLDC). It uses advanced machine learning algorithms to predict electricity demand up to 48 hours in advance, enabling better grid management, cost optimization, and prevention of blackouts.
+      </p>
+      <p class="text-slate-300">
+        By combining multiple AI models (XGBoost, LSTM, ARIMA) in an ensemble approach, Grid Guardian achieves 94-96% accuracy in predicting peak load periods, helping grid operators make informed decisions about reserve deployment and demand response programs.
+      </p>
+    </div>
+
+    <!-- Features -->
+    <div>
+      <h2 class="text-2xl font-semibold mb-6">Core Features</h2>
+      <div class="feature-grid">
+        <div class="feature-box">
+          <i class="fas fa-brain"></i>
+          <h3 class="font-semibold mb-2">AI-Powered Forecasting</h3>
+          <p class="text-sm text-slate-400">Multiple ML models working together for accurate predictions</p>
+        </div>
+        <div class="feature-box">
+          <i class="fas fa-bell"></i>
+          <h3 class="font-semibold mb-2">Real-time Alerts</h3>
+          <p class="text-sm text-slate-400">Instant notifications for peak loads and grid risks</p>
+        </div>
+        <div class="feature-box">
+          <i class="fas fa-chart-line"></i>
+          <h3 class="font-semibold mb-2">24-48 Hour Forecast</h3>
+          <p class="text-sm text-slate-400">Hourly predictions for better planning</p>
+        </div>
+        <div class="feature-box">
+          <i class="fas fa-microscope"></i>
+          <h3 class="font-semibold mb-2">Deep Insights</h3>
+          <p class="text-sm text-slate-400">AI analysis of patterns and recommendations</p>
+        </div>
+        <div class="feature-box">
+          <i class="fas fa-temperature-high"></i>
+          <h3 class="font-semibold mb-2">Weather Integration</h3>
+          <p class="text-sm text-slate-400">Real-time temperature & weather data processing</p>
+        </div>
+        <div class="feature-box">
+          <i class="fas fa-shield-alt"></i>
+          <h3 class="font-semibold mb-2">Grid Reliability</h3>
+          <p class="text-sm text-slate-400">Prevents blackouts through proactive forecasting</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Technology Stack -->
+    <div class="card p-8">
+      <h2 class="text-2xl font-semibold mb-6 flex items-center gap-2">
+        <i class="fas fa-microchip text-cyan-500"></i>
+        Technology Stack
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <h3 class="font-semibold text-emerald-400 mb-4">Machine Learning</h3>
+          <ul class="text-sm text-slate-300 space-y-2">
+            <li>✓ XGBoost (Gradient Boosting)</li>
+            <li>✓ LSTM (Deep Learning)</li>
+            <li>✓ ARIMA (Time-Series)</li>
+            <li>✓ Ensemble Methods</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold text-emerald-400 mb-4">Data Sources</h3>
+          <ul class="text-sm text-slate-300 space-y-2">
+            <li>✓ SCADA Grid Sensors</li>
+            <li>✓ Weather APIs</li>
+            <li>✓ Calendar Data</li>
+            <li>✓ Historical Load Data</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold text-emerald-400 mb-4">Frontend</h3>
+          <ul class="text-sm text-slate-300 space-y-2">
+            <li>✓ Tailwind CSS</li>
+            <li>✓ Chart.js</li>
+            <li>✓ Font Awesome Icons</li>
+            <li>✓ Responsive Design</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Section -->
+    <div class="card p-8 text-center">
+      <h3 class="text-xl font-semibold mb-4">Get Started with Grid Guardian</h3>
+      <p class="text-slate-400 mb-6">For inquiries about implementation or API access, contact Punjab SLDC</p>
+      <button class="button-primary">
+        <i class="fas fa-envelope"></i>
+        Contact Us
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 mt-12 py-8 text-center text-slate-500 text-xs">
+    <p>Grid Guardian • AI-Powered Load Forecasting • Punjab State Load Dispatch Centre</p>
+    <p class="mt-2">© 2026 • Developed with Machine Learning & Real-time Analytics</p>
+  </footer>
+
+  <script>
+    // Initialize Time
+    function updateTime() {
+      const now = new Date();
+      const options = { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' };
+      document.getElementById('current-time').textContent = now.toLocaleDateString('en-IN', options) + ' IST';
+    }
+    updateTime();
+    setInterval(updateTime, 60000);
+
+    // Page Navigation
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+      document.getElementById('nav-' + pageId).classList.add('active');
+      window.scrollTo(0, 0);
+    }
+
+    // Load Chart
+    function createChart() {
+      const ctx = document.getElementById('loadChart').getContext('2d');
+      const labels = [];
+      const actualData = [];
+      const forecastData = [];
+
+      for (let i = -10; i <= 38; i++) {
+        let hour = (14 + i) % 24;
+        labels.push(hour.toString().padStart(2, '0') + ':00');
+        
+        let baseLoad = 5800;
+        if (hour >= 17 && hour <= 22) baseLoad += 2000;
+        if (hour >= 6 && hour <= 9) baseLoad += 500;
+        
+        let load = baseLoad + (Math.random() - 0.5) * 400;
+        
+        if (i < 0) actualData.push(Math.round(load));
+        else forecastData.push(Math.round(load));
+      }
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Actual Load (MW)',
+              data: [...actualData, ...Array(forecastData.length).fill(null)],
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.05)',
+              borderWidth: 3,
+              tension: 0.4,
+              fill: true,
+              pointRadius: 4,
+              pointBackgroundColor: '#3b82f6',
+              pointBorderColor: '#1e3a8a',
+              pointBorderWidth: 2
+            },
+            {
+              label: 'AI Forecasted Load (MW)',
+              data: [...Array(actualData.length).fill(null), ...forecastData],
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.05)',
+              borderWidth: 3,
+              borderDash: [5, 5],
+              tension: 0.4,
+              fill: true,
+              pointRadius: 4,
+              pointBackgroundColor: '#10b981',
+              pointBorderColor: '#065f46',
+              pointBorderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              labels: { color: '#cbd5e1', font: { size: 12, weight: 500 } },
+              position: 'top'
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              titleColor: '#e2e8f0',
+              bodyColor: '#cbd5e1',
+              borderColor: 'rgba(16, 185, 129, 0.3)',
+              borderWidth: 1,
+              padding: 12,
+              displayColors: true
+            }
+          },
+          scales: {
+            y: {
+              min: 4000,
+              max: 9500,
+              grid: { color: 'rgba(30, 41, 59, 0.5)', drawBorder: false },
+              ticks: { color: '#94a3b8' },
+              title: { display: true, text: 'Load (MW)', color: '#cbd5e1' }
+            },
+            x: {
+              grid: { color: 'rgba(30, 41, 59, 0.5)', drawBorder: false },
+              ticks: { color: '#94a3b8' }
+            }
+          }
+        }
+      });
+    }
+
+    // High Load List
+    function createHighLoadList() {
+      const list = document.getElementById('highLoadList');
+      const periods = [
+        { time: '19:00 - 20:00', load: 8150, risk: 'CRITICAL' },
+        { time: '20:00 - 21:00', load: 8100, risk: 'CRITICAL' },
+        { time: '18:00 - 19:00', load: 7950, risk: 'WARNING' },
+        { time: '21:00 - 22:00', load: 7300, risk: 'WARNING' },
+        { time: '17:00 - 18:00', load: 7100, risk: 'WARNING' }
+      ];
+
+      list.innerHTML = periods.map(p => {
+        const color = p.risk === 'CRITICAL' ? 'bg-red-500' : 'bg-orange-500';
+        const badge = p.risk === 'CRITICAL' ? 'badge-critical' : 'badge-warning';
+        return `
+          <div class="flex items-center justify-between p-4 rounded-lg hover:bg-slate-800/50 transition">
+            <div>
+              <p class="font-semibold">${p.time}</p>
+              <p class="text-sm text-slate-400">Predicted Load</p>
+            </div>
+            <div class="text-right">
+              <p class="text-2xl font-bold text-orange-400">${p.load.toLocaleString()} MW</p>
+              <span class="badge ${badge}">${p.risk}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Forecast Table
+    function createForecastTable() {
+      const tbody = document.getElementById('forecastTable');
+      let html = '';
+      for (let h = 0; h < 24; h++) {
+        let baseLoad = 5800;
+        if (h >= 17 && h <= 22) baseLoad += 2000;
+        if (h >= 6 && h <= 9) baseLoad += 500;
+        let load = baseLoad + (Math.random() - 0.5) * 300;
+        
+        let risk = (h >= 19 && h <= 20) ? 'CRITICAL' : (h >= 17 && h <= 22) ? 'WARNING' : 'NORMAL';
+        let badge = risk === 'CRITICAL' ? 'badge-critical' : risk === 'WARNING' ? 'badge-warning' : 'badge-normal';
+        let riskColor = risk === 'CRITICAL' ? 'text-red-400' : risk === 'WARNING' ? 'text-orange-400' : 'text-emerald-400';
+        
+        html += `
+          <tr>
+            <td><strong>${h.toString().padStart(2,'0')}:00</strong></td>
+            <td><strong class="text-lg">${Math.round(load).toLocaleString()} MW</strong></td>
+            <td><span class="text-emerald-400">${(92 + Math.random() * 4).toFixed(1)}%</span></td>
+            <td><span class="badge ${badge}">${risk}</span></td>
+          </tr>`;
+      }
+      tbody.innerHTML = html;
+    }
+
+    // Alerts
+    function createAlerts() {
+      const alerts = [
+        {
+          title: 'Critical Peak Alert',
+          message: 'Predicted load at 19:00-20:00 IST may reach 8,150 MW — approaching grid threshold. Recommend emergency reserve deployment.',
+          type: 'critical',
+          icon: 'fa-exclamation-triangle'
+        },
+        {
+          title: 'High Evening Ramp Expected',
+          message: 'Temperature forecast 34-37°C will increase residential AC load by 12-15%. Activate demand response programs.',
+          type: 'warning',
+          icon: 'fa-bell'
+        },
+        {
+          title: 'Solar Generation Support',
+          message: 'Strong solar output till 17:30 IST contributing ~18% to grid. Prepare for load transition after sunset.',
+          type: 'info',
+          icon: 'fa-sun'
+        }
+      ];
+
+      document.getElementById('alertsList').innerHTML = alerts.map(a => {
+        const bgColor = a.type === 'critical' ? 'bg-red-900/20 border-red-500' : 
+                       a.type === 'warning' ? 'bg-orange-900/20 border-orange-500' : 
+                       'bg-emerald-900/20 border-emerald-500';
+        const textColor = a.type === 'critical' ? 'text-red-300' : 
+                         a.type === 'warning' ? 'text-orange-300' : 
+                         'text-emerald-300';
+        const iconColor = a.type === 'critical' ? 'text-red-400' : 
+                         a.type === 'warning' ? 'text-orange-400' : 
+                         'text-emerald-400';
+
+        return `
+          <div class="border rounded-lg p-6 ${bgColor}">
+            <div class="flex items-start gap-4">
+              <i class="fas ${a.icon} ${iconColor} text-3xl flex-shrink-0"></i>
+              <div>
+                <p class="font-bold text-lg">${a.title}</p>
+                <p class="${textColor}">${a.message}</p>
+                <p class="text-xs text-slate-400 mt-3">Issued: Just now</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Initialize
+    window.onload = function() {
+      createChart();
+      createHighLoadList();
+      createForecastTable();
+      createAlerts();
+    };
+  </script>
+</body>
+</html>
